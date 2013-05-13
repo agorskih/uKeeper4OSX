@@ -157,7 +157,28 @@
 				<key>ActionParameters</key>
 				<dict>
 					<key>source</key>
-					<string>(*   This program is free software: you can redistribute it and/or modify    it under the terms of the GNU General Public License as published by    the Free Software Foundation, either version 3 of the License, or    (at your option) any later version.    This program is distributed in the hope that it will be useful,    but WITHOUT ANY WARRANTY; without even the implied warranty of    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the    GNU General Public License for more details.    You should have received a copy of the GNU General Public License    along with this program.  If not, see &lt;http://www.gnu.org/licenses/&gt;.      May 10 2013 by Alexander Gorskih*)on run {input, parameters}	set AppleScript's text item delimiters to linefeed	set MessageContent to input as text	set AppleScript's text item delimiters to ""		activate	if MessageContent is "" then		display dialog "No URL selected" with icon stop		return	end if		set UserAnswer to (display dialog "Format: @tag1@tag2@tag3 [%p|%i]" &amp; linefeed &amp; "(%p - for pdf output; %i - for image output)" buttons {"Cancel", "Save full", "Save nice"} default button 3 default answer "")		if button returned of the UserAnswer is "Save nice" then		set RecipientAddress to the "drops@ukeeper.com"	else		set RecipientAddress to the "drops.full@ukeeper.com"	end if		set MessageSubject to the text returned of UserAnswer	if length of the (input as list) &gt; 1 then		set MessageSubject to "^" &amp; MessageSubject	end if		-- Your default Mail account is used to send a message	-- For debug purposes don't forget to turn off send and set visible to true	tell application "Mail"		set NewMessage to make new outgoing message with properties {subject:MessageSubject, content:MessageContent, visible:false}		tell NewMessage			make new to recipient at end of to recipients with properties {address:RecipientAddress}			send		end tell	end tellend run</string>
+					<string>on run {input, parameters}	activate	if input is {} then
+		-- Warning: when script runs inside Automator buttons converts to button =&gt; script fails at run		display dialog "No URL selected" with title "Error" with icon stop buttons {"OK"} cancel button 1	end if	
+	-- Warning: when script runs inside automator - with title "…" causes error	set TagsDialog to (display dialog "Enter tags separated by spaces:" with title "Tags" buttons {"Cancel", "Save full", "Save nice"} default button 3 default answer "")
+	
+	set MessageSubject to ""
+	repeat with Tag in words of text returned of TagsDialog
+		set MessageSubject to MessageSubject &amp; " @" &amp; Tag
+	end repeat
+		if button returned of the TagsDialog is "Save nice" then		set RecipientAddress to the "drops@ukeeper.com"	else		set RecipientAddress to the "drops.full@ukeeper.com"	end if
+	
+	set FormatSpecifier to (choose from list {"HTML", "IMAGE", "PDF"} default items {"HTML"} with title "Output format" with prompt "Select output format:")
+	
+	if FormatSpecifier is {"IMAGE"} then
+		set MessageSubject to MessageSubject &amp; " %i"
+	else if FormatSpecifier is {"PDF"} then
+		set MessageSubject to MessageSubject &amp; " %p"
+	else if FormatSpecifier is false then
+		return
+	end if
+	
+	repeat with Link in input		-- Your default Mail account is used to send a message		-- For debug purposes don't forget to turn off send and set visible to true		tell application "Mail"			set NewMessage to make new outgoing message with properties {subject:MessageSubject, content:Link, visible:false}			tell NewMessage				make new to recipient with properties {address:RecipientAddress}				send			end tell		end tell
+	end repeatend run</string>
 				</dict>
 				<key>BundleIdentifier</key>
 				<string>com.apple.Automator.RunScript</string>
@@ -221,7 +242,7 @@ end run</string>
 	</array>
 	<key>connectors</key>
 	<dict>
-		<key>45F24C88-E800-4728-BF58-A2172C91061E</key>
+		<key>8E4FF4EE-559A-4E09-B5CE-F710836A4902</key>
 		<dict>
 			<key>from</key>
 			<string>0EB8A540-0963-4851-8ACD-D199DBA40A3C - 0EB8A540-0963-4851-8ACD-D199DBA40A3C</string>
